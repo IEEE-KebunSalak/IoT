@@ -1,0 +1,112 @@
+
+/*
+    LoRa Tester
+*/
+
+#include "Arduino.h"
+#include <SPI.h>
+#include <DFRobot_SHT20.h>
+#include <RH_RF95.h>
+#include <RHReliableDatagram.h>
+
+#define RFM95_RST 15     // Reset pin for initial reset of module
+#define RFM95_CS 5       // SPI channel select or slave select pin for
+#define RFM95_INT 4      // SPI interrupt pin for data "ready" function
+#define RFM95_FREQ 915.0 // Frequency Set function 915 MHz
+#define SERVER_ADDRESS 2
+// SCK, MOSI, MISO (18, 23, 19)
+#define GRAVITY_ADDRESS 0x23
+#define NODE_ID 50
+
+// #define ULPSLEEP 4000      // amount in microseconds the ULP co-processor sleeps
+#define ULPSLEEP 4000      // amount in microseconds the ULP co-processor sleeps
+#define TIMEFACTOR 1000000 // factor between seconds and microseconds
+#define TIMESLEEP 3600     // amount in seconds the ESP32 sleeps
+#define PIN_RAIN GPIO_NUM_25
+#define PIN_RAIN_RTC 6
+
+typedef struct main
+{
+    uint8_t id;
+    float temperature;
+    float humidity;
+    float lux;
+    uint32_t tips;
+} Payload;
+
+// instances
+DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
+RH_RF95 rf95(RFM95_CS, RFM95_INT);
+RHReliableDatagram manager(rf95, NODE_ID);
+
+void sendPayload();
+
+void setup()
+{
+
+    Serial.begin(9600);
+    setCpuFrequencyMhz(80);
+
+    // LoRa setup
+    pinMode(RFM95_RST, OUTPUT);
+    digitalWrite(RFM95_RST, HIGH);
+    delay(10);
+    digitalWrite(RFM95_RST, LOW);
+    delay(10);
+    digitalWrite(RFM95_RST, HIGH);
+    delay(10);
+
+    if (!rf95.init())
+    {
+        Serial.println("RFM95 radio init failed");
+        while (1)
+            ;
+    }
+
+    Serial.println("RFM95 radio init OK!");
+
+    if (!rf95.setFrequency(RFM95_FREQ))
+    {
+        Serial.println("setFrequency failed");
+        while (1)
+            ;
+    }
+
+    rf95.setTxPower(23, false);
+    rf95.setThisAddress(NODE_ID);
+    rf95.setHeaderFrom(NODE_ID);
+    rf95.setHeaderTo(SERVER_ADDRESS);
+    rf95.setModeTx();
+    rf95.setModemConfig(RH_RF95::Bw125Cr45Sf2048);
+    rf95.setPayloadCRC(true);
+    manager.setRetries(0);
+
+    Serial.println("LoRa Setup complete");
+}
+
+void loop()
+{
+    // unused loop cuz of deep sleep
+
+    sendPayload();
+    delay(5000);
+}
+
+void sendPayload()
+{
+    Payload payload;
+    payload.id = NODE_ID;
+    payload.temperature = 1;
+    payload.humidity = 1;
+    payload.lux = 1;
+    payload.tips = 1;
+
+    if (manager.sendtoWait((uint8_t *)&payload, sizeof(payload), SERVER_ADDRESS))
+    {
+        Serial.println("Message sent");
+    }
+    else
+    {
+        Serial.println("Message failed");
+    }
+}

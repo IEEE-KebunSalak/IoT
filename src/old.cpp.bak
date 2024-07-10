@@ -1,0 +1,2018 @@
+/*
+    Without sleep
+*/
+
+// #include <Arduino.h>
+// #include <Wire.h>
+// #include <SPI.h>
+// #include <DFRobot_SHT20.h>
+// #include <RH_RF95.h>
+// #include <RHReliableDatagram.h>
+
+// #define RFM95_RST 15     // Reset pin for initial reset of module
+// #define RFM95_CS 5       // SPI channel select or slave select pin for
+// #define RFM95_INT 4      // SPI interrupt pin for data "ready" function
+// #define RFM95_FREQ 915.0 // Frequency Set function 915 MHz
+// #define CLIENT_ADDRESS 5
+// #define SERVER_ADDRESS 2
+// // SCK, MOSI, MISO (18, 23, 19)
+// #define GRAVITY_ADDRESS 0x23
+
+// #define INTERRUPT_PIN 25
+// #define DEBOUNCE_TIME 200 // Debounce time in milliseconds
+
+// #define NODE_ID 5
+
+// typedef struct main
+// {
+//     uint8_t id;
+//     float temperature;
+//     float humidity;
+//     float lux;
+//     int tips;
+// } Payload;
+
+// // instances
+// DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
+// RH_RF95 rf95(RFM95_CS, RFM95_INT);
+// RHReliableDatagram manager(rf95, CLIENT_ADDRESS);
+
+// uint8_t buf[4] = {0};
+// uint16_t data;
+
+// // func dec
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size);
+// float gravity();
+// void sendPayload();
+
+// // tipping bucket interrupt
+// volatile uint tipCount = 0;
+// volatile unsigned long lastInterruptTime = 0;
+
+// // belom di check
+// void IRAM_ATTR tip()
+// {
+//     unsigned long currentTime = millis();
+//     if (currentTime - lastInterruptTime > DEBOUNCE_TIME)
+//     {
+//         tipCount++;
+//         lastInterruptTime = currentTime;
+//     }
+// }
+
+// void setup()
+// {
+
+//     setCpuFrequencyMhz(80);
+
+//     Serial.begin(9600);
+//     sht20.initSHT20();
+//     delay(100);
+//     sht20.checkSHT20();
+//     Serial.println("SHT20 init complete");
+
+//     // setup interrupt for tipping bucket
+//     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), tip, FALLING);
+
+//     Wire.begin();
+//     SPI.begin();
+
+//     pinMode(RFM95_RST, OUTPUT);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+//     digitalWrite(RFM95_RST, LOW);
+//     delay(10);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+
+//     if (!rf95.init())
+//     {
+//         Serial.println("RFM95 radio init failed");
+//         while (1)
+//             ;
+//     }
+//     Serial.println("RFM95 radio init OK!");
+
+//     if (!rf95.setFrequency(RFM95_FREQ))
+//     {
+//         Serial.println("setFrequency failed");
+//         while (1)
+//             ;
+//     }
+
+//     rf95.setTxPower(23, false);
+//     rf95.setThisAddress(CLIENT_ADDRESS);
+//     rf95.setHeaderFrom(CLIENT_ADDRESS);
+//     rf95.setHeaderTo(SERVER_ADDRESS);
+//     rf95.setModeTx();
+//     rf95.setModemConfig(RH_RF95::Bw125Cr45Sf2048);
+//     // rf95.setCADTimeout(5000);
+//     // rf95.waitAvailableTimeout(2000);
+
+//     rf95.setModeRx();
+
+//     Serial.println("LoRa Setup complete");
+// }
+
+// void loop()
+// {
+//     // check if receive broadcast message
+//     if (rf95.available())
+//     {
+//         uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+//         uint8_t len = sizeof(buf);
+
+//         if (rf95.recv(buf, &len))
+//         {
+//             Serial.print("got request from : 0x");
+//             Serial.print(": ");
+//             Serial.println((char *)buf);
+
+//             // check if from server and buff is 0x69
+//             if (buf[0] == 0x69)
+//             {
+//                 sendPayload();
+//             }
+//         }
+//         else
+//         {
+//             Serial.println("recv failed");
+//         }
+//     }
+// }
+
+// float gravity()
+// {
+//     readReg(0x10, buf, 2);
+//     data = buf[0] << 8 | buf[1];
+//     return (((float)data) / 1.2);
+// }
+
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size)
+// {
+//     if (pBuf == NULL)
+//     {
+//         Serial.println("pBuf ERROR!! : null pointer");
+//     }
+//     uint8_t *_pBuf = (uint8_t *)pBuf;
+//     Wire.beginTransmission(GRAVITY_ADDRESS);
+//     Wire.write(&reg, 1);
+//     if (Wire.endTransmission() != 0)
+//     {
+//         return 0;
+//     }
+//     delay(20);
+//     Wire.requestFrom(GRAVITY_ADDRESS, size);
+//     for (uint16_t i = 0; i < size; i++)
+//     {
+//         _pBuf[i] = Wire.read();
+//     }
+//     return size;
+// }
+
+// void sendPayload()
+// {
+//     Payload payload;
+//     payload.id = NODE_ID;
+//     payload.temperature = sht20.readTemperature();
+//     payload.humidity = sht20.readHumidity();
+//     payload.lux = gravity();
+//     payload.tips = ceil(tipCount / 2);
+
+//     // reset tip count
+//     tipCount = 0;
+
+//     Serial.println("Temperature: ");
+//     Serial.println(payload.temperature);
+//     Serial.println("Humidity: ");
+//     Serial.println(payload.humidity);
+//     Serial.println("Lux: ");
+//     Serial.println(payload.lux);
+//     Serial.println("Tips");
+//     Serial.println(payload.tips);
+
+//     if (manager.sendtoWait((uint8_t *)&payload, sizeof(payload), SERVER_ADDRESS))
+//     {
+//         Serial.println("Message sent");
+//     }
+//     else
+//     {
+//         Serial.println("Message failed");
+//     }
+// }
+
+/*
+    Debug serial print
+*/
+
+// #include <Arduino.h>
+// #include <Wire.h>
+// #include <SPI.h>
+// #include <DFRobot_SHT20.h>
+// #include <RH_RF95.h>
+// #include <RHReliableDatagram.h>
+
+// #define RFM95_RST 15     // Reset pin for initial reset of module
+// #define RFM95_CS 5       // SPI channel select or slave select pin for
+// #define RFM95_INT 4      // SPI interrupt pin for data "ready" function
+// #define RFM95_FREQ 915.0 // Frequency Set function 915 MHz
+// #define CLIENT_ADDRESS 5
+// #define SERVER_ADDRESS 2
+// // SCK, MOSI, MISO (18, 23, 19)
+// #define GRAVITY_ADDRESS 0x23
+
+// #define INTERRUPT_PIN 25
+// #define DEBOUNCE_TIME 200 // Debounce time in milliseconds
+
+// #define NODE_ID 1
+
+// typedef struct main
+// {
+//     uint8_t id;
+//     float temperature;
+//     float humidity;
+//     float lux;
+//     uint8_t tips;
+// } Payload;
+
+// // instances
+// DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
+// RH_RF95 rf95(RFM95_CS, RFM95_INT);
+// RHReliableDatagram manager(rf95, CLIENT_ADDRESS);
+
+// uint8_t buf[4] = {0};
+// uint16_t data;
+
+// // func dec
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size);
+// float gravity();
+// void sendPayload();
+
+// // tipping bucket interrupt
+// volatile int tipCount = 0;
+// volatile unsigned long lastInterruptTime = 0;
+
+// // belom di check
+// void IRAM_ATTR tip()
+// {
+//     unsigned long currentTime = millis();
+//     if (currentTime - lastInterruptTime > DEBOUNCE_TIME)
+//     {
+//         tipCount++;
+//         lastInterruptTime = currentTime;
+//     }
+// }
+
+// void setup()
+// {
+//     Serial.begin(9600);
+//     // sht20.initSHT20();
+//     delay(100);
+//     // sht20.checkSHT20();
+//     // Serial.println("SHT20 init complete");
+
+//     // setup interrupt for tipping bucket
+//     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), tip, RISING);
+
+//     Wire.begin();
+//     SPI.begin();
+
+//     // pinMode(RFM95_RST, OUTPUT);
+//     // digitalWrite(RFM95_RST, HIGH);
+//     // delay(10);
+//     // digitalWrite(RFM95_RST, LOW);
+//     // delay(10);
+//     // digitalWrite(RFM95_RST, HIGH);
+//     // delay(10);
+
+//     // if (!rf95.init())
+//     // {
+//     //     Serial.println("RFM95 radio init failed");
+//     //     while (1)
+//     //         ;
+//     // }
+//     // Serial.println("RFM95 radio init OK!");
+
+//     // if (!rf95.setFrequency(RFM95_FREQ))
+//     // {
+//     //     Serial.println("setFrequency failed");
+//     //     while (1)
+//     //         ;
+//     // }
+
+//     // rf95.setTxPower(23, false);
+//     // rf95.setThisAddress(CLIENT_ADDRESS);
+//     // rf95.setHeaderFrom(CLIENT_ADDRESS);
+//     // rf95.setHeaderTo(SERVER_ADDRESS);
+//     // rf95.setModeTx();
+//     // rf95.setModemConfig(RH_RF95::Bw125Cr45Sf2048);
+//     // rf95.setCADTimeout(5000);
+//     // rf95.waitAvailableTimeout(2000);
+
+//     Serial.println("LoRa Setup complete");
+
+//     // rf95.setLowDatarate();
+// }
+
+// void loop()
+// {
+//     // // check if receive broadcast message
+//     // if (rf95.available())
+//     // {
+//     //     uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+//     //     uint8_t len = sizeof(buf);
+
+//     //     if (rf95.recv(buf, &len))
+//     //     {
+//     //         Serial.print("got request from : 0x");
+//     //         Serial.print(": ");
+//     //         Serial.println((char *)buf);
+
+//     //         // check if from server and buff is 0xAA
+//     //         if (buf[0] == 0xAA)
+//     //         {
+//     //             sendPayload();
+//     //         }
+//     //     }
+//     //     else
+//     //     {
+//     //         Serial.println("recv failed");
+//     //     }
+//     // }
+
+//     sendPayload();
+//     delay(5000);
+// }
+
+// float gravity()
+// {
+//     readReg(0x10, buf, 2);
+//     data = buf[0] << 8 | buf[1];
+//     return (((float)data) / 1.2);
+// }
+
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size)
+// {
+//     if (pBuf == NULL)
+//     {
+//         Serial.println("pBuf ERROR!! : null pointer");
+//     }
+//     uint8_t *_pBuf = (uint8_t *)pBuf;
+//     Wire.beginTransmission(GRAVITY_ADDRESS);
+//     Wire.write(&reg, 1);
+//     if (Wire.endTransmission() != 0)
+//     {
+//         Serial.println("Failed to make connection with gravity lux");
+//         return 0;
+//     }
+//     delay(20);
+//     Wire.requestFrom(GRAVITY_ADDRESS, size);
+//     for (uint16_t i = 0; i < size; i++)
+//     {
+//         _pBuf[i] = Wire.read();
+//     }
+//     return size;
+// }
+
+// void sendPayload()
+// {
+//     Payload payload;
+//     payload.id = NODE_ID;
+//     // payload.temperature = sht20.readTemperature();
+//     // payload.humidity = sht20.readHumidity();
+//     payload.temperature = 0;
+//     payload.humidity = 0;
+//     payload.lux = gravity();
+//     payload.tips = tipCount;
+
+//     // reset tip count
+//     tipCount = 0;
+
+//     Serial.println("Temperature: ");
+//     Serial.println(payload.temperature);
+//     Serial.println("Humidity: ");
+//     Serial.println(payload.humidity);
+//     Serial.println("Lux: ");
+//     Serial.println(payload.lux);
+//     Serial.println("Tips: ");
+//     Serial.println(payload.tips);
+
+//     // if (manager.sendtoWait((uint8_t *)&payload, sizeof(payload), SERVER_ADDRESS))
+//     // {
+//     //     Serial.println("Message sent");
+//     // }
+//     // else
+//     // {
+//     //     Serial.println("Message failed");
+//     // }
+// }
+
+/*
+    With sleep
+*/
+
+// #include <Arduino.h>
+// #include <Wire.h>
+// #include <SPI.h>
+// #include <DFRobot_SHT20.h>
+// #include <RH_RF95.h>
+// #include <RHReliableDatagram.h>
+// #include "esp_sleep.h"
+
+// #define RFM95_RST 15     // Reset pin for initial reset of module
+// #define RFM95_CS 5       // SPI channel select or slave select pin for
+// #define RFM95_INT 4      // SPI interrupt pin for data "ready" function
+// #define RFM95_FREQ 915.0 // Frequency Set function 915 MHz
+// #define CLIENT_ADDRESS 5
+// #define SERVER_ADDRESS 2
+// // SCK, MOSI, MISO (18, 23, 19)
+// #define GRAVITY_ADDRESS 0x23
+
+// #define DEBOUNCE_TIME 200 // Debounce time in milliseconds
+
+// #define NODE_ID 5
+
+// #define DEBUG_LED_PIN 2
+
+// typedef struct main
+// {
+//     uint8_t id;
+//     float temperature;
+//     float humidity;
+//     float lux;
+//     uint tips;
+// } Payload;
+
+// // instances
+// DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
+// RH_RF95 rf95(RFM95_CS, RFM95_INT);
+// RHReliableDatagram manager(rf95, CLIENT_ADDRESS);
+
+// uint8_t buf[4] = {0};
+// uint16_t data;
+
+// // RTC memory to retain values during deep sleep
+// RTC_DATA_ATTR uint tipCount = 0;
+
+// // function declarations
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size);
+// float gravity();
+// void sendPayload();
+
+// void setup()
+// {
+//     // setCpuFrequencyMhz(80); // Set CPU frequency to 80 MHz to reduce power consumption
+//     // Serial.begin(9600);
+
+//     // indikator nyala
+//     pinMode(DEBUG_LED_PIN, OUTPUT);
+//     digitalWrite(DEBUG_LED_PIN, HIGH);
+
+//     // Configure wakeup sources
+//     // bitmask for dio0 : 4 = 0x10
+
+//     // esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON); // Power up the RTC peripherals
+//     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_ON);
+//     esp_sleep_enable_ext0_wakeup(GPIO_NUM_25, 0);
+//     esp_sleep_enable_ext1_wakeup(GPIO_SEL_4, esp_sleep_ext1_wakeup_mode_t::ESP_EXT1_WAKEUP_ANY_HIGH); // aman
+
+//     // This will only run when ESP32 wakes up
+//     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+
+//     Serial.print("wakeup caused by: ");
+//     Serial.println(wakeup_reason);
+
+//     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0)
+//     {
+
+//         tipCount++;
+
+//         // Go to sleep
+//         Serial.println("Going to sleep now");
+//         esp_deep_sleep_start();
+//     }
+
+//     // lora setup
+//     pinMode(RFM95_RST, OUTPUT);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+//     digitalWrite(RFM95_RST, LOW);
+//     delay(10);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+
+//     if (!rf95.init())
+//     {
+
+//         Serial.println("RFM95 radio init failed");
+//         while (1)
+//             ;
+//     }
+//     Serial.println("RFM95 radio init OK!");
+
+//     if (!rf95.setFrequency(RFM95_FREQ))
+//     {
+//         Serial.println("setFrequency failed");
+//         while (1)
+//             ;
+//     }
+
+//     rf95.setTxPower(23, false);
+//     rf95.setThisAddress(CLIENT_ADDRESS);
+//     rf95.setHeaderFrom(CLIENT_ADDRESS);
+//     rf95.setHeaderTo(SERVER_ADDRESS);
+//     // rf95.setModeTx();
+//     rf95.setModemConfig(RH_RF95::Bw125Cr45Sf2048);
+//     // rf95.setCADTimeout(5000);
+//     // rf95.waitAvailableTimeout(2000);
+//     // rf95.setLowDatarate();
+
+//     delay(1000);
+
+//     Serial.println("LoRa Setup complete");
+
+//     sht20.initSHT20();
+//     Serial.println("SHT20 init complete");
+
+//     Wire.begin();
+
+//     // kalo wakeup dari lora
+//     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT1)
+//     {
+
+//         // blink led 3 times
+//         for (int i = 0; i < 3; i++)
+//         {
+//             digitalWrite(DEBUG_LED_PIN, LOW);
+//             delay(500);
+//             digitalWrite(DEBUG_LED_PIN, HIGH);
+//             delay(500);
+//         }
+
+//         sendPayload();
+//     }
+
+//     rf95.setModeRx();
+
+//     // Go to sleep
+//     Serial.println("Going to sleep now");
+//     esp_deep_sleep_start();
+// }
+
+// void loop()
+// {
+//     // leave empty for deep sleep
+// }
+
+// float gravity()
+// {
+//     readReg(0x10, buf, 2);
+//     data = buf[0] << 8 | buf[1];
+//     return (((float)data) / 1.2);
+// }
+
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size)
+// {
+//     if (pBuf == NULL)
+//     {
+//         Serial.println("pBuf ERROR!! : null pointer");
+//     }
+//     uint8_t *_pBuf = (uint8_t *)pBuf;
+//     Wire.beginTransmission(GRAVITY_ADDRESS);
+//     Wire.write(&reg, 1);
+//     if (Wire.endTransmission() != 0)
+//     {
+//         return 0;
+//     }
+//     delay(20);
+//     Wire.requestFrom(GRAVITY_ADDRESS, size);
+//     for (uint16_t i = 0; i < size; i++)
+//     {
+//         _pBuf[i] = Wire.read();
+//     }
+//     return size;
+// }
+
+// void sendPayload()
+// {
+//     Payload payload;
+//     payload.id = NODE_ID;
+//     payload.temperature = sht20.readTemperature();
+//     payload.humidity = sht20.readHumidity();
+//     payload.lux = gravity();
+//     payload.tips = ceil(tipCount / 2);
+
+//     // reset tip count
+//     tipCount = 0;
+
+//     Serial.println("Temperature: ");
+//     Serial.println(payload.temperature);
+//     Serial.println("Humidity: ");
+//     Serial.println(payload.humidity);
+//     Serial.println("Lux: ");
+//     Serial.println(payload.lux);
+//     Serial.println("Tips: ");
+//     Serial.println(payload.tips);
+
+//     if (manager.sendtoWait((uint8_t *)&payload, sizeof(payload), SERVER_ADDRESS))
+//     {
+//         Serial.println("Message sent");
+//     }
+//     else
+//     {
+//         Serial.println("Message failed");
+//     }
+// }
+
+/*
+    Sleep with timer wakeup
+*/
+
+// #include <Arduino.h>
+// #include <Wire.h>
+// #include <SPI.h>
+// #include <DFRobot_SHT20.h>
+// #include <RH_RF95.h>
+// #include <RHReliableDatagram.h>
+// #include "esp_sleep.h"
+// #include "esp32/rtc.h"
+
+// #define RFM95_RST 15     // Reset pin for initial reset of module
+// #define RFM95_CS 5       // SPI channel select or slave select pin for
+// #define RFM95_INT 4      // SPI interrupt pin for data "ready" function
+// #define RFM95_FREQ 915.0 // Frequency Set function 915 MHz
+// #define CLIENT_ADDRESS 5
+// #define SERVER_ADDRESS 2
+// // SCK, MOSI, MISO (18, 23, 19)
+// #define GRAVITY_ADDRESS 0x23
+
+// #define DEBOUNCE_TIME 200 // Debounce time in milliseconds
+
+// #define NODE_ID 5
+
+// #define DEBUG_LED_PIN 2
+
+// #define SLEEP_DURATION 3600 // sleep duration in seconds
+
+// typedef struct main
+// {
+//     uint8_t id;
+//     float temperature;
+//     float humidity;
+//     float lux;
+//     uint tips;
+// } Payload;
+
+// // instances
+// DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
+// RH_RF95 rf95(RFM95_CS, RFM95_INT);
+// RHReliableDatagram manager(rf95, CLIENT_ADDRESS);
+
+// uint8_t buf[4] = {0};
+// uint16_t data;
+
+// // RTC memory to retain values during deep sleep
+// RTC_DATA_ATTR uint tipCount = 0;
+// RTC_DATA_ATTR uint64_t lastWakeTime = 0; // Last wake time stored in RTC memory
+
+// // function declarations
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size);
+// float gravity();
+// void sendPayload();
+
+// void setup()
+// {
+//     setCpuFrequencyMhz(80); // Set CPU frequency to 80 MHz to reduce power consumption
+//     // Serial.begin(9600);
+
+//     // indikator nyala
+//     pinMode(DEBUG_LED_PIN, OUTPUT);
+//     digitalWrite(DEBUG_LED_PIN, HIGH);
+
+//     // Configure wakeup sources
+
+//     esp_sleep_enable_ext0_wakeup(GPIO_NUM_25, 0);
+//     esp_sleep_enable_timer_wakeup(SLEEP_DURATION * 1000000ULL);
+
+//     // This will only run when ESP32 wakes up
+//     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+
+//     Serial.print("Wakeup caused by: ");
+//     Serial.println(wakeup_reason);
+
+//     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0)
+//     {
+//         tipCount++;
+//     }
+
+//     uint64_t currentTime = esp_timer_get_time();                   // Current time in microseconds
+
+//     uint64_t elapsedTime = (currentTime - lastWakeTime) / 1000000; // Elapsed time in seconds
+
+//     if (elapsedTime >= SLEEP_DURATION || wakeup_reason == ESP_SLEEP_WAKEUP_TIMER)
+//     {
+//         // LoRa setup
+//         pinMode(RFM95_RST, OUTPUT);
+//         digitalWrite(RFM95_RST, HIGH);
+//         delay(10);
+//         digitalWrite(RFM95_RST, LOW);
+//         delay(10);
+//         digitalWrite(RFM95_RST, HIGH);
+//         delay(10);
+
+//         if (!rf95.init())
+//         {
+//             Serial.println("RFM95 radio init failed");
+//             while (1)
+//                 ;
+//         }
+//         Serial.println("RFM95 radio init OK!");
+
+//         if (!rf95.setFrequency(RFM95_FREQ))
+//         {
+//             Serial.println("setFrequency failed");
+//             while (1)
+//                 ;
+//         }
+
+//         rf95.setTxPower(23, false);
+//         rf95.setThisAddress(CLIENT_ADDRESS);
+//         rf95.setHeaderFrom(CLIENT_ADDRESS);
+//         rf95.setHeaderTo(SERVER_ADDRESS);
+//         rf95.setModeTx();
+//         rf95.setModemConfig(RH_RF95::Bw125Cr45Sf2048);
+
+//         Serial.println("LoRa Setup complete");
+
+//         sht20.initSHT20();
+//         Wire.begin();
+
+//         // delay to ensure LoRa and all sensors are ready
+//         delay(2500);
+
+//         Serial.println("Sensor init complete");
+
+//         sendPayload();
+//         lastWakeTime = currentTime; // Update the last wake time
+
+//         rf95.sleep();
+//     }
+
+//     // Go to sleep
+//     Serial.println("Going to sleep now");
+//     esp_deep_sleep_start();
+// }
+
+// void loop()
+// {
+//     // leave empty for deep sleep
+// }
+
+// float gravity()
+// {
+//     readReg(0x10, buf, 2);
+//     data = buf[0] << 8 | buf[1];
+//     return (((float)data) / 1.2);
+// }
+
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size)
+// {
+//     if (pBuf == NULL)
+//     {
+//         Serial.println("pBuf ERROR!! : null pointer");
+//     }
+//     uint8_t *_pBuf = (uint8_t *)pBuf;
+//     Wire.beginTransmission(GRAVITY_ADDRESS);
+//     Wire.write(&reg, 1);
+//     if (Wire.endTransmission() != 0)
+//     {
+//         return 0;
+//     }
+//     delay(20);
+//     Wire.requestFrom(GRAVITY_ADDRESS, size);
+//     for (uint16_t i = 0; i < size; i++)
+//     {
+//         _pBuf[i] = Wire.read();
+//     }
+//     return size;
+// }
+
+// void sendPayload()
+// {
+//     Payload payload;
+//     payload.id = NODE_ID;
+//     payload.temperature = sht20.readTemperature();
+//     payload.humidity = sht20.readHumidity();
+//     payload.lux = gravity();
+//     payload.tips = ceil(tipCount / 2);
+
+//     // reset tip count
+//     tipCount = 0;
+
+//     Serial.println("Temperature: ");
+//     Serial.println(payload.temperature);
+//     Serial.println("Humidity: ");
+//     Serial.println(payload.humidity);
+//     Serial.println("Lux: ");
+//     Serial.println(payload.lux);
+//     Serial.println("Tips: ");
+//     Serial.println(payload.tips);
+
+//     if (manager.sendtoWait((uint8_t *)&payload, sizeof(payload), SERVER_ADDRESS))
+//     {
+//         Serial.println("Message sent");
+//     }
+//     else
+//     {
+//         Serial.println("Message failed");
+//     }
+// }
+
+/*
+    ESP deep sleep with time syncing
+*/
+
+// #include <Arduino.h>
+// #include <Wire.h>
+// #include <SPI.h>
+// #include <DFRobot_SHT20.h>
+// #include <RH_RF95.h>
+// #include <RHReliableDatagram.h>
+// #include "esp_sleep.h"
+// #include "soc/rtc.h"
+// #include "esp_clk.h"
+
+// #define RFM95_RST 15     // Reset pin for initial reset of module
+// #define RFM95_CS 5       // SPI channel select or slave select pin for
+// #define RFM95_INT 4      // SPI interrupt pin for data "ready" function
+// #define RFM95_FREQ 915.0 // Frequency Set function 915 MHz
+// #define CLIENT_ADDRESS 5
+// #define SERVER_ADDRESS 2
+// // SCK, MOSI, MISO (18, 23, 19)
+// #define GRAVITY_ADDRESS 0x23
+
+// #define DEBOUNCE_TIME 200 // Debounce time in milliseconds
+
+// #define NODE_ID 5
+
+// #define DEBUG_LED_PIN 2
+
+// #define SLEEP_DURATION 3600 // sleep duration in seconds
+
+// typedef struct main
+// {
+//     uint8_t id;
+//     float temperature;
+//     float humidity;
+//     float lux;
+//     uint tips;
+// } Payload;
+
+// // instances
+// DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
+// RH_RF95 rf95(RFM95_CS, RFM95_INT);
+// RHReliableDatagram manager(rf95, CLIENT_ADDRESS);
+
+// uint8_t buf[4] = {0};
+// uint16_t data;
+
+// // RTC memory to retain values during deep sleep
+// RTC_DATA_ATTR uint tipCount = 0;
+// RTC_DATA_ATTR uint8_t bootCount = 0;
+
+// // function declarations
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size);
+// float gravity();
+// void sendPayload();
+// uint64_t getCurrentTimeInMicro();
+// uint64_t calculateNextWakeDelay();
+// void syncRTC(uint32_t epoch);
+
+// void setup()
+// {
+//     setCpuFrequencyMhz(80); // Set CPU frequency to 80 MHz to reduce power consumption
+//     // Serial.begin(9600);
+
+//     // indikator nyala
+//     pinMode(DEBUG_LED_PIN, OUTPUT);
+//     digitalWrite(DEBUG_LED_PIN, HIGH);
+
+//     // This will only run when ESP32 wakes up
+//     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+
+//     Serial.print("Wakeup caused by: ");
+//     Serial.println(wakeup_reason);
+
+//     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0)
+//     {
+//         bootCount++;
+//         tipCount++;
+//     }
+
+//     if (wakeup_reason == ESP_SLEEP_WAKEUP_TIMER || bootCount == 0)
+//     {
+//         bootCount++;
+
+//         // LoRa setup
+//         pinMode(RFM95_RST, OUTPUT);
+//         digitalWrite(RFM95_RST, HIGH);
+//         delay(10);
+//         digitalWrite(RFM95_RST, LOW);
+//         delay(10);
+//         digitalWrite(RFM95_RST, HIGH);
+//         delay(10);
+
+//         if (!rf95.init())
+//         {
+//             Serial.println("RFM95 radio init failed");
+//             while (1)
+//                 ;
+//         }
+//         Serial.println("RFM95 radio init OK!");
+
+//         if (!rf95.setFrequency(RFM95_FREQ))
+//         {
+//             Serial.println("setFrequency failed");
+//             while (1)
+//                 ;
+//         }
+
+//         rf95.setTxPower(23, false);
+//         rf95.setThisAddress(CLIENT_ADDRESS);
+//         rf95.setHeaderFrom(CLIENT_ADDRESS);
+//         rf95.setHeaderTo(SERVER_ADDRESS);
+//         rf95.setModeTx();
+//         rf95.setModemConfig(RH_RF95::Bw125Cr45Sf2048);
+
+//         Serial.println("LoRa Setup complete");
+
+//         sht20.initSHT20();
+//         Wire.begin();
+
+//         // delay to ensure LoRa and all sensors are ready
+//         delay(2500);
+
+//         Serial.println("Sensor init complete");
+
+//         sendPayload();
+
+//         // request time from server
+//         if (rf95.available())
+//         {
+//             // assume server send epoch as uint32_t
+//             uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+//             uint8_t len = sizeof(buf);
+
+//             if (rf95.recv(buf, &len))
+//             {
+//                 if (buf[0] == 0x68)
+//                 {
+//                     uint32_t epoch = 0;
+//                     memcpy(&epoch, &buf[1], sizeof(epoch));
+//                     syncRTC(epoch);
+//                 }
+//             }
+//         }
+
+//         rf95.sleep();
+//     }
+
+//     // Go to sleep
+//     Serial.println("Going to sleep now");
+
+//     // Configure wakeup sources
+//     esp_sleep_enable_ext0_wakeup(GPIO_NUM_25, 0);
+
+//     // calculate next wake up time from rtc
+//     uint64_t nextWakeDelay = calculateNextWakeDelay();
+//     esp_sleep_enable_timer_wakeup(nextWakeDelay);
+
+//     esp_deep_sleep_start();
+// }
+
+// void loop()
+// {
+//     // leave empty for deep sleep
+// }
+
+// // Get current time in microseconds even after deep sleep
+// uint64_t getCurrentTimeInMicro()
+// {
+//     return rtc_time_slowclk_to_us(rtc_time_get(), esp_clk_slowclk_cal_get());
+// }
+
+// uint64_t calculateNextWakeDelay()
+// {
+//     // get current time
+//     uint64_t currentTime = getCurrentTimeInMicro();
+//     // get current tm using currentTime
+//     struct tm timeinfo;
+//     time_t now = currentTime / 1000000;
+//     localtime_r(&now, &timeinfo);
+
+//     // set next wake up time
+//     timeinfo.tm_sec += SLEEP_DURATION;
+
+//     // calculate next wake up delay for the next wake up in microseconds
+//     return (mktime(&timeinfo) - now) * 1000000;
+// }
+
+// // millis epoch
+// void syncRTC(uint32_t epoch)
+// {
+//     // using settimeofday
+//     struct timeval tv;
+//     tv.tv_sec = epoch / 1000;
+//     tv.tv_usec = 0;
+//     settimeofday(&tv, NULL);
+// }
+
+// float gravity()
+// {
+//     readReg(0x10, buf, 2);
+//     data = buf[0] << 8 | buf[1];
+//     return (((float)data) / 1.2);
+// }
+
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size)
+// {
+//     if (pBuf == NULL)
+//     {
+//         Serial.println("pBuf ERROR!! : null pointer");
+//     }
+//     uint8_t *_pBuf = (uint8_t *)pBuf;
+//     Wire.beginTransmission(GRAVITY_ADDRESS);
+//     Wire.write(&reg, 1);
+//     if (Wire.endTransmission() != 0)
+//     {
+//         return 0;
+//     }
+//     delay(20);
+//     Wire.requestFrom(GRAVITY_ADDRESS, size);
+//     for (uint16_t i = 0; i < size; i++)
+//     {
+//         _pBuf[i] = Wire.read();
+//     }
+//     return size;
+// }
+
+// void sendPayload()
+// {
+//     Payload payload;
+//     payload.id = NODE_ID;
+//     payload.temperature = sht20.readTemperature();
+//     payload.humidity = sht20.readHumidity();
+//     payload.lux = gravity();
+//     payload.tips = ceil(tipCount / 2);
+
+//     // reset tip count
+//     tipCount = 0;
+
+//     Serial.println("Temperature: ");
+//     Serial.println(payload.temperature);
+//     Serial.println("Humidity: ");
+//     Serial.println(payload.humidity);
+//     Serial.println("Lux: ");
+//     Serial.println(payload.lux);
+//     Serial.println("Tips: ");
+//     Serial.println(payload.tips);
+
+//     if (manager.sendtoWait((uint8_t *)&payload, sizeof(payload), SERVER_ADDRESS))
+//     {
+//         Serial.println("Message sent");
+//     }
+//     else
+//     {
+//         Serial.println("Message failed");
+//     }
+// }
+
+/*
+    With sleep and ULP to count tipping
+*/
+
+// #include <Arduino.h>
+// #include <Wire.h>
+// #include <SPI.h>
+// #include <DFRobot_SHT20.h>
+// #include <RH_RF95.h>
+// #include <RHReliableDatagram.h>
+// #include "esp_sleep.h"
+// #include "esp32/ulp.h"
+
+// #define RFM95_RST 15     // Reset pin for initial reset of module
+// #define RFM95_CS 5       // SPI channel select or slave select pin
+// #define RFM95_INT 4      // SPI interrupt pin for data "ready" function
+// #define RFM95_FREQ 915.0 // Frequency Set function 915 MHz
+// #define CLIENT_ADDRESS 5
+// #define SERVER_ADDRESS 2
+// // SCK, MOSI, MISO (18, 23, 19)
+// #define GRAVITY_ADDRESS 0x23
+
+// #define INTERRUPT_PIN 25
+// #define DEBOUNCE_TIME 200 // Debounce time in milliseconds
+
+// #define NODE_ID 1
+
+// typedef struct
+// {
+//     uint8_t id;
+//     float temperature;
+//     float humidity;
+//     float lux;
+//     uint8_t tips;
+// } Payload;
+
+// // instances
+// DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
+// RH_RF95 rf95(RFM95_CS, RFM95_INT);
+// RHReliableDatagram manager(rf95, CLIENT_ADDRESS);
+
+// RTC_DATA_ATTR volatile int tipCount = 0; // Use RTC memory to retain tip count
+
+// uint8_t buf[4] = {0};
+// uint16_t data;
+
+// // func dec
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size);
+// float gravity();
+// void sendPayload();
+// void ulp_load_program();
+// void tip();
+
+// void setup()
+// {
+//     Serial.begin(9600);
+//     sht20.initSHT20();
+//     delay(100);
+//     sht20.checkSHT20();
+//     Serial.println("SHT20 init complete");
+
+//     // setup interrupt for tipping bucket
+//     // pinMode(INTERRUPT_PIN, INPUT_PULLUP);
+//     // attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), tip, RISING);
+
+//     Wire.begin();
+//     SPI.begin();
+
+//     pinMode(RFM95_RST, OUTPUT);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+//     digitalWrite(RFM95_RST, LOW);
+//     delay(10);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+
+//     if (!rf95.init())
+//     {
+//         Serial.println("RFM95 radio init failed");
+//         while (1)
+//             ;
+//     }
+//     Serial.println("RFM95 radio init OK!");
+
+//     if (!rf95.setFrequency(RFM95_FREQ))
+//     {
+//         Serial.println("setFrequency failed");
+//         while (1)
+//             ;
+//     }
+
+//     rf95.setTxPower(23, false);
+//     rf95.setThisAddress(CLIENT_ADDRESS);
+//     rf95.setHeaderFrom(CLIENT_ADDRESS);
+//     rf95.setHeaderTo(SERVER_ADDRESS);
+//     rf95.setModeTx();
+//     rf95.setModemConfig(RH_RF95::Bw125Cr45Sf2048);
+//     rf95.setCADTimeout(5000);
+//     rf95.waitAvailableTimeout(2000);
+
+//     Serial.println("LoRa Setup complete");
+
+//     rf95.setLowDatarate();
+
+//     // Configure ULP wakeup and run the ULP program
+//     ulp_load_program();
+//     esp_sleep_enable_ulp_wakeup();
+
+//     // Configure wakeup on LoRa interrupt
+//     esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, 0);
+//     Serial.println(tipCount);
+
+//     Serial.println("Entering deep sleep");
+//     esp_deep_sleep_start();
+// }
+
+// void loop()
+// {
+//     // This code will not run as ESP is in deep sleep
+// }
+
+// float gravity()
+// {
+//     readReg(0x10, buf, 2);
+//     data = buf[0] << 8 | buf[1];
+//     return (((float)data) / 1.2);
+// }
+
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size)
+// {
+//     if (pBuf == NULL)
+//     {
+//         Serial.println("pBuf ERROR!! : null pointer");
+//     }
+//     uint8_t *_pBuf = (uint8_t *)pBuf;
+//     Wire.beginTransmission(GRAVITY_ADDRESS);
+//     Wire.write(&reg, 1);
+//     if (Wire.endTransmission() != 0)
+//     {
+//         return 0;
+//     }
+//     delay(20);
+//     Wire.requestFrom(GRAVITY_ADDRESS, size);
+//     for (uint16_t i = 0; i < size; i++)
+//     {
+//         _pBuf[i] = Wire.read();
+//     }
+//     return size;
+// }
+
+// void sendPayload()
+// {
+//     Payload payload;
+//     payload.id = NODE_ID;
+//     payload.temperature = sht20.readTemperature();
+//     payload.humidity = sht20.readHumidity();
+//     payload.lux = gravity();
+//     payload.tips = tipCount;
+
+//     // reset tip count
+//     tipCount = 0;
+
+//     Serial.println("Temperature: ");
+//     Serial.println(payload.temperature);
+//     Serial.println("Humidity: ");
+//     Serial.println(payload.humidity);
+//     Serial.println("Lux: ");
+//     Serial.println(payload.lux);
+
+//     if (manager.sendtoWait((uint8_t *)&payload, sizeof(payload), SERVER_ADDRESS))
+//     {
+//         Serial.println("Message sent");
+//     }
+//     else
+//     {
+//         Serial.println("Message failed");
+//     }
+// }
+
+// // ULP program to handle tipping bucket interrupt
+// void ulp_load_program()
+// {
+//     const ulp_insn_t program[] = {
+//         I_MOVI(R3, INTERRUPT_PIN),         // Move GPIO number to R3
+//         I_GET(R0, R3, GPIO_IN_REG),        // Read GPIO input
+//         I_ANDI(R0, R0, 0x01),              // Mask all but the least significant bit
+//         M_BL(1, 0),                        // If the bit is low, jump to label 1 (skip increment)
+//         I_ADDI(R0, R0, 1),                 // Increment tipCount
+//         I_ST(R0, R3, RTC_CNTL_STORE0_REG), // Store the new tipCount value
+//         I_HALT(),                          // Halt the ULP program
+//         I_LABEL(1),                        // Label 1
+//         I_HALT()                           // Halt the ULP program
+//     };
+
+//     size_t size = sizeof(program) / sizeof(ulp_insn_t);
+//     ulp_process_macros_and_load(0, program, &size);
+//     ulp_run(0);
+// }
+
+// void IRAM_ATTR tip()
+// {
+//     // This will be handled by the ULP
+// }
+
+// ====================================== experimentation code ======================================
+
+// #include <Arduino.h>
+// #include <Wire.h>
+// #include <SPI.h>
+// #include <DFRobot_SHT20.h>
+// #include <RH_RF95.h>
+// #include <RHReliableDatagram.h>
+
+// #define RFM95_RST 15     // Reset pin for initial reset of module
+// #define RFM95_CS 5       // SPI channel select or slave select pin for
+// #define RFM95_INT 4      // SPI interrupt pin for data "ready" function
+// #define RFM95_FREQ 915.0 // Frequency Set function 915 MHz
+// #define CLIENT_ADDRESS 5
+// #define SERVER_ADDRESS 2
+// // SCK, MOSI, MISO (18, 23, 19)
+// #define GRAVITY_ADDRESS 0x23
+
+// #define INTERRUPT_PIN 25
+// #define DEBOUNCE_TIME 200 // Debounce time in milliseconds
+
+// #define NODE_ID 5
+
+// typedef struct main
+// {
+//     uint8_t id;
+//     float temperature;
+//     float humidity;
+//     float lux;
+//     uint8_t tips;
+// } Payload;
+
+// // instances
+// DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
+// RH_RF95 rf95(RFM95_CS, RFM95_INT);
+// RHReliableDatagram manager(rf95, CLIENT_ADDRESS);
+
+// uint8_t buf[4] = {0};
+// uint16_t data;
+
+// // func dec
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size);
+// float gravity();
+// void sendPayload();
+
+// // tipping bucket interrupt
+// volatile int tipCount = 0;
+// volatile unsigned long lastInterruptTime = 0;
+
+// // belom di check
+// void IRAM_ATTR tip()
+// {
+//     unsigned long currentTime = millis();
+//     if (currentTime - lastInterruptTime > DEBOUNCE_TIME)
+//     {
+//         tipCount++;
+//         lastInterruptTime = currentTime;
+//     }
+// }
+
+// void setup()
+// {
+//     Serial.begin(9600);
+//     sht20.initSHT20();
+//     delay(100);
+//     sht20.checkSHT20();
+//     Serial.println("SHT20 init complete");
+
+//     // setup interrupt for tipping bucket
+//     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), tip, RISING);
+
+//     Wire.begin();
+//     SPI.begin();
+
+//     pinMode(RFM95_RST, OUTPUT);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+//     digitalWrite(RFM95_RST, LOW);
+//     delay(10);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+
+//     if (!rf95.init())
+//     {
+//         Serial.println("RFM95 radio init failed");
+//         while (1)
+//             ;
+//     }
+//     Serial.println("RFM95 radio init OK!");
+
+//     if (!rf95.setFrequency(RFM95_FREQ))
+//     {
+//         Serial.println("setFrequency failed");
+//         while (1)
+//             ;
+//     }
+
+//     rf95.setTxPower(23, false);
+//     rf95.setThisAddress(CLIENT_ADDRESS);
+//     rf95.setHeaderFrom(CLIENT_ADDRESS);
+//     rf95.setHeaderTo(SERVER_ADDRESS);
+//     rf95.setModeTx();
+//     rf95.setModemConfig(RH_RF95::Bw125Cr45Sf2048);
+//     rf95.setCADTimeout(5000);
+//     rf95.waitAvailableTimeout(2000);
+
+//     rf95.setModeRx();
+
+//     Serial.println("LoRa Setup complete");
+// }
+
+// void loop()
+// {
+//     // check if receive broadcast message
+//     if (rf95.available())
+//     {
+//         uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+//         uint8_t len = sizeof(buf);
+
+//         if (rf95.recv(buf, &len))
+//         {
+//             Serial.print("got request from : 0x");
+//             Serial.print(": ");
+//             Serial.println((char *)buf);
+
+//             // check if from server and buff is 0x69
+//             if (buf[0] == 0x69)
+//             {
+//                 sendPayload();
+//             }
+//         }
+//         else
+//         {
+//             Serial.println("recv failed");
+//         }
+//     }
+// }
+
+// float gravity()
+// {
+//     readReg(0x10, buf, 2);
+//     data = buf[0] << 8 | buf[1];
+//     return (((float)data) / 1.2);
+// }
+
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size)
+// {
+//     if (pBuf == NULL)
+//     {
+//         Serial.println("pBuf ERROR!! : null pointer");
+//     }
+//     uint8_t *_pBuf = (uint8_t *)pBuf;
+//     Wire.beginTransmission(GRAVITY_ADDRESS);
+//     Wire.write(&reg, 1);
+//     if (Wire.endTransmission() != 0)
+//     {
+//         return 0;
+//     }
+//     delay(20);
+//     Wire.requestFrom(GRAVITY_ADDRESS, size);
+//     for (uint16_t i = 0; i < size; i++)
+//     {
+//         _pBuf[i] = Wire.read();
+//     }
+//     return size;
+// }
+
+// void sendPayload()
+// {
+//     Payload payload;
+//     payload.id = NODE_ID;
+//     payload.temperature = sht20.readTemperature();
+//     payload.humidity = sht20.readHumidity();
+//     payload.lux = gravity();
+//     payload.tips = tipCount;
+
+//     // reset tip count
+//     tipCount = 0;
+
+//     Serial.println("Temperature: ");
+//     Serial.println(payload.temperature);
+//     Serial.println("Humidity: ");
+//     Serial.println(payload.humidity);
+//     Serial.println("Lux: ");
+//     Serial.println(payload.lux);
+//     Serial.println("Tips");
+//     Serial.println(payload.tips);
+
+//     if (manager.sendtoWait((uint8_t *)&payload, sizeof(payload), SERVER_ADDRESS))
+//     {
+//         Serial.println("Message sent");
+//     }
+//     else
+//     {
+//         Serial.println("Message failed");
+//     }
+// }
+
+// ====================================== experimentation code ======================================
+
+// #include <Arduino.h>
+// #include <Wire.h>
+// #include <SPI.h>
+// #include <DFRobot_SHT20.h>
+// #include <RH_RF95.h>
+// #include <RHReliableDatagram.h>
+// #include "esp_sleep.h"
+// #include "soc/rtc_cntl_reg.h"
+// #include "driver/rtc_io.h"
+// #include <hulp.h>
+
+// #define RFM95_RST 15     // Reset pin for initial reset of module
+// #define RFM95_CS 5       // SPI channel select or slave select pin for
+// #define RFM95_INT 4      // SPI interrupt pin for data "ready" function
+// #define RFM95_FREQ 915.0 // Frequency Set function 915 MHz
+// #define CLIENT_ADDRESS 5
+// #define SERVER_ADDRESS 2
+// // SCK, MOSI, MISO (18, 23, 19)
+// #define GRAVITY_ADDRESS 0x23
+
+// #define INTERRUPT_PIN 25
+// #define DEBOUNCE_TIME 200 // Debounce time in milliseconds
+
+// #define NODE_ID 5
+
+// typedef struct main
+// {
+//     uint8_t id;
+//     float temperature;
+//     float humidity;
+//     float lux;
+//     uint8_t tips;
+// } Payload;
+
+// // instances
+// DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
+// RH_RF95 rf95(RFM95_CS, RFM95_INT);
+// RHReliableDatagram manager(rf95, CLIENT_ADDRESS);
+
+// uint8_t buf[4] = {0};
+// uint16_t data;
+
+// // func dec
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size);
+// float gravity();
+// void sendPayload();
+// void enterDeepSleep();
+// void wakeUp();
+
+// // tipping bucket interrupt handled by ULP
+// RTC_DATA_ATTR volatile int tipCount = 0;
+
+// void setup()
+// {
+//     Serial.begin(9600);
+//     sht20.initSHT20();
+//     delay(100);
+//     sht20.checkSHT20();
+//     Serial.println("SHT20 init complete");
+
+//     Wire.begin();
+//     SPI.begin();
+
+//     pinMode(RFM95_RST, OUTPUT);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+//     digitalWrite(RFM95_RST, LOW);
+//     delay(10);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+
+//     if (!rf95.init())
+//     {
+//         Serial.println("RFM95 radio init failed");
+//         while (1)
+//             ;
+//     }
+//     Serial.println("RFM95 radio init OK!");
+
+//     if (!rf95.setFrequency(RFM95_FREQ))
+//     {
+//         Serial.println("setFrequency failed");
+//         while (1)
+//             ;
+//     }
+
+//     rf95.setTxPower(23, false);
+//     rf95.setThisAddress(CLIENT_ADDRESS);
+//     rf95.setHeaderFrom(CLIENT_ADDRESS);
+//     rf95.setHeaderTo(SERVER_ADDRESS);
+//     rf95.setModeTx();
+//     rf95.setModemConfig(RH_RF95::Bw125Cr45Sf2048);
+//     rf95.setCADTimeout(5000);
+//     rf95.waitAvailableTimeout(2000);
+//     rf95.setModeRx();
+
+//     Serial.println("LoRa Setup complete");
+
+//     // Attach interrupt to wake up ESP32 on DIO0 pin
+//     esp_sleep_enable_ext0_wakeup((gpio_num_t)RFM95_INT, 0); // DIO0 goes LOW on receive
+//     enterDeepSleep();
+// }
+
+// void loop()
+// {
+//     // Nothing to do here, main work is in wakeUp function
+// }
+
+// void wakeUp()
+// {
+//     if (rf95.available())
+//     {
+//         uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+//         uint8_t len = sizeof(buf);
+
+//         if (rf95.recv(buf, &len))
+//         {
+//             Serial.print("got request from : 0x");
+//             Serial.print(": ");
+//             Serial.println((char *)buf);
+
+//             // check if from server and buff is 0x69
+//             if (buf[0] == 0x69)
+//             {
+//                 sendPayload();
+//             }
+//         }
+//         else
+//         {
+//             Serial.println("recv failed");
+//         }
+//     }
+
+//     enterDeepSleep();
+// }
+
+// void enterDeepSleep()
+// {
+//     Serial.println("Entering deep sleep");
+//     esp_deep_sleep_start();
+// }
+
+// float gravity()
+// {
+//     readReg(0x10, buf, 2);
+//     data = buf[0] << 8 | buf[1];
+//     return (((float)data) / 1.2);
+// }
+
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size)
+// {
+//     if (pBuf == NULL)
+//     {
+//         Serial.println("pBuf ERROR!! : null pointer");
+//     }
+//     uint8_t *_pBuf = (uint8_t *)pBuf;
+//     Wire.beginTransmission(GRAVITY_ADDRESS);
+//     Wire.write(&reg, 1);
+//     if (Wire.endTransmission() != 0)
+//     {
+//         return 0;
+//     }
+//     delay(20);
+//     Wire.requestFrom(GRAVITY_ADDRESS, size);
+//     for (uint16_t i = 0; i < size; i++)
+//     {
+//         _pBuf[i] = Wire.read();
+//     }
+//     return size;
+// }
+
+// void sendPayload()
+// {
+//     Payload payload;
+//     payload.id = NODE_ID;
+//     payload.temperature = sht20.readTemperature();
+//     payload.humidity = sht20.readHumidity();
+//     payload.lux = gravity();
+//     payload.tips = tipCount;
+
+//     // reset tip count
+//     tipCount = 0;
+
+//     Serial.println("Temperature: ");
+//     Serial.println(payload.temperature);
+//     Serial.println("Humidity: ");
+//     Serial.println(payload.humidity);
+//     Serial.println("Lux: ");
+//     Serial.println(payload.lux);
+//     Serial.println("Tips");
+//     Serial.println(payload.tips);
+
+//     if (manager.sendtoWait((uint8_t *)&payload, sizeof(payload), SERVER_ADDRESS))
+//     {
+//         Serial.println("Message sent");
+//     }
+//     else
+//     {
+//         Serial.println("Message failed");
+//     }
+// }
+
+// // ULP tipping bucket interrupt setup
+// void initULP()
+// {
+//     const ulp_insn_t program[] = {
+//         I_MOVI(R3, 0),                         // R3 holds the previous state
+//         I_LD(R0, R3, 0),                       // Load previous state into R0
+//         I_GET(R1, GPIO_IN_REG, INTERRUPT_PIN), // Get current state of the pin
+//         I_ST(R1, R3, 0),                       // Store current state to memory
+//         I_SUBI(R2, R1, 1),                     // R2 = R1 - 1
+//         M_BXZ(1),                              // If R1 == 0, skip next instruction
+//         I_ADDI(R2, R2, 2),                     // R2 = R2 + 2 (R2 was 0, becomes 2)
+//         M_BXZ(1),                              // If R2 == 0, skip next instruction
+//         I_ADDI(R0, R0, 1),                     // Increment counter
+//         I_MOVI(R2, 100),                       // R2 holds debounce value
+//         M_LABEL(0),
+//         I_ADDI(R2, R2, -1), // R2 = R2 - 1
+//         M_BXZ(0),           // If R2 != 0, loop
+//         I_HALT()};
+
+//     size_t size = sizeof(program) / sizeof(ulp_insn_t);
+//     hulp_ulp_load(program, size);
+//     hulp_peripherals_enable();
+//     hulp_ulp_run(0);
+// }
+
+/*
+    Experiment
+    using 2 rtc pins to wake up, pin 4 and 25
+    for pin 4 blink led 2 times, for pin 25 blink led 3 times
+*/
+
+// #include <Arduino.h>
+// #include <SPI.h>
+// #include <Wire.h>
+// #include "esp_sleep.h"
+
+// #define LED_PIN 2
+// #define WAKEUP_PIN_1 4
+// #define WAKEUP_PIN_2 25
+
+// void setup()
+// {
+//     pinMode(LED_PIN, OUTPUT);
+//     pinMode(WAKEUP_PIN_1, INPUT_PULLUP);
+//     pinMode(WAKEUP_PIN_2, INPUT_PULLUP);
+
+//     Serial.begin(9600);
+
+//     Serial.println("Going to sleep now");
+//     // Configure wakeup sources
+//     esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, 0);
+//     esp_sleep_enable_ext0_wakeup(GPIO_NUM_25, 0);
+// }
+
+// void loop()
+// {
+//     // This will only run when ESP32 wakes up
+//     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+
+//     // check cause pin 4
+//     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0)
+//     {
+
+//         Serial.println("Woke up from pin 4");
+//         // Blink LED 2 times
+//         for (int i = 0; i < 2; i++)
+//         {
+//             digitalWrite(LED_PIN, HIGH);
+//             delay(500);
+//             digitalWrite(LED_PIN, LOW);
+//             delay(500);
+//         }
+//     }
+
+//     // Go back to sleep after processing
+//     esp_deep_sleep_start();
+// }
+
+/*
+    I2C Scanner
+*/
+
+// // SPDX-FileCopyrightText: 2023 Carter Nelson for Adafruit Industries
+// //
+// // SPDX-License-Identifier: MIT
+// // --------------------------------------
+// // i2c_scanner
+// //
+// // Modified from https://playground.arduino.cc/Main/I2cScanner/
+// // --------------------------------------
+
+// #include <Arduino.h>
+// #include <Wire.h>
+// #include <SPI.h>
+
+// // Set I2C bus to use: Wire, Wire1, etc.
+// #define WIRE Wire
+
+// void setup()
+// {
+//     WIRE.begin();
+
+//     Serial.begin(9600);
+//     while (!Serial)
+//         delay(10);
+//     Serial.println("\nI2C Scanner");
+// }
+
+// void loop()
+// {
+//     byte error, address;
+//     int nDevices;
+
+//     Serial.println("Scanning...");
+
+//     nDevices = 0;
+//     for (address = 1; address < 127; address++)
+//     {
+//         // The i2c_scanner uses the return value of
+//         // the Write.endTransmisstion to see if
+//         // a device did acknowledge to the address.
+//         WIRE.beginTransmission(address);
+//         error = WIRE.endTransmission();
+
+//         if (error == 0)
+//         {
+//             Serial.print("I2C device found at address 0x");
+//             if (address < 16)
+//                 Serial.print("0");
+//             Serial.print(address, HEX);
+//             Serial.println("  !");
+
+//             nDevices++;
+//         }
+//         else if (error == 4)
+//         {
+//             Serial.print("Unknown error at address 0x");
+//             if (address < 16)
+//                 Serial.print("0");
+//             Serial.println(address, HEX);
+//         }
+//     }
+//     if (nDevices == 0)
+//         Serial.println("No I2C devices found\n");
+//     else
+//         Serial.println("done\n");
+
+//     delay(5000); // wait 5 seconds for next scan
+// }
+
+/*
+    Original ULP Pulse Counter with Sleep
+*/
+
+// #include "Arduino.h"
+// #include "SPI.h"
+// #include "Wire.h"
+// #include "driver/gpio.h"
+// #include "driver/rtc_io.h"
+
+// #include "esp32/ulp.h"
+// #include "ulp_main.h"
+// #include "ulptool.h"
+
+// #define RAINFACTOR 0.2794  // 0.2794 mm per pulse defined by the Rain Gauge
+// #define ULPSLEEP 4000      // amount in microseconds the ULP co-processor sleeps
+// #define TIMEFACTOR 1000000 // factor between seconds and microseconds
+// #define TIMESLEEP 10       // amount in seconds the ESP32 sleeps
+// #define PIN_RAIN GPIO_NUM_25
+// #define PIN_RAIN_RTC 6
+
+// bool disp = true;
+// RTC_DATA_ATTR int bootCount = 0;
+// RTC_DATA_ATTR int timeSleep = 0;
+
+// extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
+// extern const uint8_t ulp_main_bin_end[] asm("_binary_ulp_main_bin_end");
+
+// void windTest();
+// void initSleep(void);
+// static void initULP(void);
+// static uint32_t getPulseCount(void);
+// static uint32_t getShortestPulse(void);
+// long getElapsed(unsigned long compareMillis);
+
+// void setup()
+// {
+//     // Serial.begin(9600);
+//     setCpuFrequencyMhz(80);
+//     ++bootCount;
+
+//     initULP();
+//     windTest();
+//     initSleep();
+
+//     // Serial.println(F("Waiting instead of sleeping."));
+// }
+
+// void loop()
+// {
+// }
+
+// void windTest()
+// {
+
+//     // Wind Speed, Rain, Wind Gust Speed and Rain Downpour
+//     if (timeSleep > 0)
+//     {
+
+//         // Wind Speed and Rain
+//         int pulsesRaw = getPulseCount();
+
+//         // blink led n times of pulseRaw count
+//         pinMode(2, OUTPUT);
+//         for (int i = 0; i < pulsesRaw; i++)
+//         {
+//             digitalWrite(2, HIGH);
+//             delay(500);
+//             digitalWrite(2, LOW);
+//             delay(500);
+//         }
+//     }
+
+//     timeSleep = TIMESLEEP;
+// }
+
+// /****************\
+// |*    Sleep     *|
+// \****************/
+
+// void initSleep(void)
+// {
+//     Serial.println(F("Preparing deep sleep now"));
+
+//     Serial.println("Set timer for sleep-wakeup every " + String(timeSleep) + " seconds");
+//     esp_sleep_enable_timer_wakeup(timeSleep * TIMEFACTOR);
+
+//     esp_sleep_pd_config(ESP_PD_DOMAIN_MAX, ESP_PD_OPTION_OFF);
+//     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
+
+//     Serial.println(F("Going into deep sleep now"));
+//     esp_deep_sleep_start();
+// }
+
+// /****************\
+// |*     ULP      *|
+// \****************/
+
+// static void initULP(void)
+// {
+//     if (timeSleep > 0)
+//         return;
+//     esp_err_t err_load = ulp_load_binary(0, ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start) / sizeof(uint32_t));
+//     ESP_ERROR_CHECK(err_load);
+
+//     /* GPIO used for pulse counting. */
+//     gpio_num_t gpio_num = PIN_RAIN;
+//     // assert(rtc_gpio_desc[gpio_num].reg && "GPIO used for pulse counting must be an RTC IO");
+
+//     /* Initialize some variables used by ULP program.
+//      * Each 'ulp_xyz' variable corresponds to 'xyz' variable in the ULP program.
+//      * These variables are declared in an auto generated header file,
+//      * 'ulp_main.h', name of this file is defined in component.mk as ULP_APP_NAME.
+//      * These variables are located in RTC_SLOW_MEM and can be accessed both by the
+//      * ULP and the main CPUs.
+//      *
+//      * Note that the ULP reads only the lower 16 bits of these variables. */
+//     ulp_debounce_counter = 5;
+//     ulp_debounce_max_count = 5;
+//     ulp_pulse_edge = 0;
+//     ulp_next_edge = 0;
+//     // ulp_io_number = rtc_gpio_desc[gpio_num].rtc_num; /* map from GPIO# to RTC_IO# */
+//     ulp_io_number = PIN_RAIN_RTC; /* map from GPIO# to RTC_IO# */
+
+//     /* Initialize selected GPIO as RTC IO, enable input, sets pullup and pulldown */
+//     rtc_gpio_init(gpio_num);
+//     rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_INPUT_ONLY);
+//     rtc_gpio_pulldown_dis(gpio_num);
+//     rtc_gpio_pullup_en(gpio_num);
+//     rtc_gpio_hold_en(gpio_num);
+
+//     /* Set ULP wake up period to T = 4ms.
+//      * Minimum pulse width has to be T * (ulp_debounce_counter + 1) = 24ms. */
+//     ulp_set_wakeup_period(0, ULPSLEEP);
+
+//     /* Start the program */
+//     esp_err_t err_run = ulp_run(&ulp_entry - RTC_SLOW_MEM);
+//     ESP_ERROR_CHECK(err_run);
+// }
+
+// static uint32_t getPulseCount(void)
+// {
+//     /* ULP program counts signal edges, convert that to the number of pulses */
+//     uint32_t pulse_count_from_ulp = (ulp_edge_count & UINT16_MAX) / 2;
+
+//     /* In case of an odd number of edges, keep one until next time */
+//     ulp_edge_count = ulp_edge_count % 2;
+
+//     return pulse_count_from_ulp;
+// }
+
+// static uint32_t getShortestPulse(void)
+// {
+//     /* ULP program saves shortes pulse */
+//     uint32_t pulse_time_min = (ulp_pulse_min & UINT16_MAX) * ULPSLEEP;
+
+//     /* Reset shortest edge */
+//     ulp_pulse_min = 0;
+
+//     return pulse_time_min;
+// }
+
+// long getElapsed(unsigned long compareMillis)
+// {
+//     unsigned long currentMillis = millis();
+//     unsigned long elapsedMillis = currentMillis - compareMillis;
+//     // return abs(elapsedMillis);
+//     return elapsedMillis;
+// }
+
+/*
+    Integration of ULP Pulse Counter with Sleep and LoRa
+*/

@@ -1,0 +1,17 @@
+changed T 58 
+debounce_counter B 130 
+debounce_max_count B 134 
+edge_count B 144 
+edge_detected T 74 
+entry T 0 
+io_number B 148 
+next_edge B 12c 
+pulse_cur B 13c 
+pulse_detected T d4 
+pulse_edge B 128 
+pulse_lower T 100 
+pulse_min B 140 
+pulse_res B 138 
+pulse_reset T 114 
+pulse_tick T c0 
+read_now T 4 
