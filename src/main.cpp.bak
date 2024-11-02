@@ -33,6 +33,7 @@
 
 #include <pinout.h>
 #include <config.h>
+
 typedef struct main
 {
     uint8_t id;
@@ -81,8 +82,11 @@ void setup()
     // Serial.begin(9600);
     setCpuFrequencyMhz(80);
 
-    // disable hold for switching power
+    // test taro luar
+    // pinMode(GPS_POWER, INPUT_PULLDOWN);
     rtc_gpio_hold_dis(GPS_POWER);
+
+    pinMode(LED_BUILTIN, OUTPUT);
 
     // add delay if first boot
     if (firstBoot)
@@ -93,6 +97,12 @@ void setup()
         rtc_gpio_pullup_dis(GPS_POWER);
         rtc_gpio_pulldown_en(GPS_POWER);
         rtc_gpio_set_direction(GPS_POWER, RTC_GPIO_MODE_INPUT_ONLY);
+        // rtc_gpio_hold_en(GPS_POWER);
+
+        // Define static IP configuration
+        IPAddress local_IP(1, 1, 1, 1);     // Static IP
+        IPAddress gateway(1, 1, 1, 1);      // Gateway (same as IP for standalone AP)
+        IPAddress subnet(255, 255, 255, 0); // Subnet mask
 
         AsyncWebServer server(80);
         DNSServer dnsServer; // DNS server to handle captive portal
@@ -133,53 +143,63 @@ void setup()
     // debug yang ULP - matiin kalo udah bisa
     if (wakeup_reason == ESP_SLEEP_WAKEUP_TIMER || wakeup_reason == ESP_SLEEP_WAKEUP_ULP || wakeup_reason == ESP_SLEEP_WAKEUP_EXT1 || firstBoot)
     {
-        // LoRa setup
-        pinMode(RFM95_RST, OUTPUT);
-        digitalWrite(RFM95_RST, HIGH);
-        delay(10);
-        digitalWrite(RFM95_RST, LOW);
-        delay(10);
-        digitalWrite(RFM95_RST, HIGH);
-        delay(10);
+        // // LoRa setup
+        // pinMode(RFM95_RST, OUTPUT);
+        // digitalWrite(RFM95_RST, HIGH);
+        // delay(10);
+        // digitalWrite(RFM95_RST, LOW);
+        // delay(10);
+        // digitalWrite(RFM95_RST, HIGH);
+        // delay(10);
 
-        if (!rf95.init())
-        {
-            Serial.println(F("RFM95 radio init failed"));
-            while (1)
-                ;
-        }
-        Serial.println(F("RFM95 radio init OK!"));
+        // if (!rf95.init())
+        // {
+        //     Serial.println(F("RFM95 radio init failed"));
+        //     while (1)
+        //         ;
+        // }
+        // Serial.println(F("RFM95 radio init OK!"));
 
-        if (!rf95.setFrequency(RFM95_FREQ))
-        {
-            Serial.println(F("setFrequency failed"));
-            while (1)
-                ;
-        }
+        // if (!rf95.setFrequency(RFM95_FREQ))
+        // {
+        //     Serial.println(F("setFrequency failed"));
+        //     while (1)
+        //         ;
+        // }
 
-        rf95.setTxPower(23, false);
-        rf95.setThisAddress(NODE_ID);
-        rf95.setHeaderFrom(NODE_ID);
-        rf95.setHeaderTo(SERVER_ADDRESS);
-        rf95.setModeTx();
-        rf95.setModemConfig(RH_RF95::Bw125Cr48Sf4096);
-        rf95.setPayloadCRC(true);
-        manager.setRetries(0);
+        // rf95.setTxPower(23, false);
+        // rf95.setThisAddress(NODE_ID);
+        // rf95.setHeaderFrom(NODE_ID);
+        // rf95.setHeaderTo(SERVER_ADDRESS);
+        // rf95.setModeTx();
+        // rf95.setModemConfig(RH_RF95::Bw125Cr48Sf4096);
+        // rf95.setPayloadCRC(true);
+        // manager.setRetries(0);
 
         Serial.println(F("LoRa Setup complete"));
 
         // if woke up from timer or ULP -- add first boot
         if (wakeup_reason == ESP_SLEEP_WAKEUP_TIMER || wakeup_reason == ESP_SLEEP_WAKEUP_ULP || firstBoot)
         {
-            sht20.initSHT20();
-            Wire.begin();
+            // sht20.initSHT20();
+            // Wire.begin();
 
-            // delay to ensure LoRa and all sensors are ready
-            delay(2500);
+            // // delay to ensure LoRa and all sensors are ready
+            // delay(2500);
 
-            Serial.println(F("Sensor init complete"));
+            // Serial.println(F("Sensor init complete"));
 
-            sendPayload();
+            // sendPayload();
+
+            // blink LED 2 times
+
+            for (int i = 0; i < 2; i++)
+            {
+                digitalWrite(LED_BUILTIN, HIGH);
+                delay(500);
+                digitalWrite(LED_BUILTIN, LOW);
+                delay(500);
+            }
         }
 
         // if woke up from ext1 - antimaling trigger
@@ -188,40 +208,59 @@ void setup()
             // power up GPS via TIP31C
             rtc_gpio_deinit(GPS_POWER);
             rtc_gpio_init(GPS_POWER);
+            // rtc_gpio_hold_dis(GPS_POWER);
+            // rtc_gpio_pulldown_dis(GPS_POWER);
+            rtc_gpio_pullup_dis(GPS_POWER);
             rtc_gpio_set_direction(GPS_POWER, RTC_GPIO_MODE_OUTPUT_ONLY);
             rtc_gpio_set_level(GPS_POWER, 1);
 
-            Serial1.begin(9600, SERIAL_8N1, GPS_RXPIN, GPS_TXPIN);
+            // pinMode(GPS_POWER, OUTPUT);
+            // digitalWrite(GPS_POWER, HIGH);
 
-            int count = 0;
+            // Serial1.begin(9600, SERIAL_8N1, GPS_RXPIN, GPS_TXPIN);
 
-            // try to read GPS and send it to gateway 3 times
-            while (count < 3)
+            // int count = 0;
+
+            // // try to read GPS and send it to gateway 3 times
+            // while (count < 3)
+            // {
+            //     if (Serial1.available() <= 0)
+            //     {
+            //         delay(10);
+            //         continue;
+            //     }
+
+            //     if (gps.encode(Serial1.read()) && gps.location.isValid())
+            //     {
+            //         gpsPayload.id = NODE_ID;
+            //         gpsPayload.latitude = gps.location.lat();
+            //         gpsPayload.longitude = gps.location.lng();
+
+            //         // send distress signal to gateway
+            //         manager.sendtoWait((uint8_t *)&gpsPayload, sizeof(gpsPayload), SERVER_ADDRESS);
+
+            //         // sleep for 2 seconds for each iteration
+            //         delay(2000);
+            //         count++;
+            //     }
+            // }
+
+            // blink LED 5 times
+            for (int i = 0; i < 5; i++)
             {
-                if (Serial1.available() <= 0)
-                {
-                    delay(10);
-                    continue;
-                }
-
-                if (gps.encode(Serial1.read()) && gps.location.isValid())
-                {
-                    gpsPayload.id = NODE_ID;
-                    gpsPayload.latitude = gps.location.lat();
-                    gpsPayload.longitude = gps.location.lng();
-
-                    // send distress signal to gateway
-                    manager.sendtoWait((uint8_t *)&gpsPayload, sizeof(gpsPayload), SERVER_ADDRESS);
-
-                    // sleep for 2 seconds for each iteration
-                    delay(2000);
-                    count++;
-                }
+                digitalWrite(LED_BUILTIN, HIGH);
+                delay(500);
+                digitalWrite(LED_BUILTIN, LOW);
+                delay(500);
             }
+
+            delay(5000);
         }
 
-        rf95.sleep();
+        // rf95.sleep();
     }
+
+    // pinMode(GPS_POWER, INPUT_PULLDOWN);
 
     // disable GPS for deep sleep
     rtc_gpio_deinit(GPS_POWER);
@@ -399,8 +438,8 @@ static uint32_t getShortestPulse(void)
 void setupCaptivePortal(DNSServer *dns, AsyncWebServer *ws)
 {
     // Start DNS server to redirect all requests to the ESP32 IP
-    dns->setTTL(3600);
-    dns->start(53, "*", local_IP);
+    dns->start(53, "*", WiFi.softAPIP()); // Captive portal to resolve all domains to the ESP32 IP
+
     // Web server routes
     ws->on("/", HTTP_GET, [](AsyncWebServerRequest *request)
            { request->redirect("/update"); }); // Redirect root to the update page
@@ -414,22 +453,19 @@ void setupCaptivePortal(DNSServer *dns, AsyncWebServer *ws)
     // Background responses: Probably not all are Required, but some are. Others might speed things up?
     // A Tier (commonly used by modern systems)
     ws->on("/generate_204", [](AsyncWebServerRequest *request)
-           { request->redirect(localIPUrl); }); // android captive portal redirect
+           { request->redirect("/update"); }); // android captive portal redirect
     ws->on("/redirect", [](AsyncWebServerRequest *request)
-           { request->redirect(localIPUrl); }); // microsoft redirect
+           { request->redirect("/update"); }); // microsoft redirect
     ws->on("/hotspot-detect.html", [](AsyncWebServerRequest *request)
-           { request->redirect(localIPUrl); }); // apple call home
+           { request->redirect("/update"); }); // apple call home
     ws->on("/canonical.html", [](AsyncWebServerRequest *request)
-           { request->redirect(localIPUrl); }); // firefox captive portal call home
+           { request->redirect("/update"); }); // firefox captive portal call home
     ws->on("/success.txt", [](AsyncWebServerRequest *request)
            { request->send(200); }); // firefox captive portal call home
     ws->on("/ncsi.txt", [](AsyncWebServerRequest *request)
-           { request->redirect(localIPUrl); }); // windows call home
+           { request->redirect("/update"); }); // windows call home
 
     // return 404 to webpage icon
     ws->on("/favicon.ico", [](AsyncWebServerRequest *request)
            { request->send(404); }); // webpage icon
-
-    ws->onNotFound([](AsyncWebServerRequest *request)
-                   { request->redirect(localIPUrl); }); // redirect anything
 }

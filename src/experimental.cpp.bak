@@ -1,0 +1,482 @@
+
+/*                LoRa Tester                */
+
+// /*
+//     LoRa Tester
+// */
+
+// #include "Arduino.h"
+// #include <SPI.h>
+// #include <DFRobot_SHT20.h>
+// #include <RH_RF95.h>
+// #include <RHReliableDatagram.h>
+
+// #define RFM95_RST 15     // Reset pin for initial reset of module
+// #define RFM95_CS 5       // SPI channel select or slave select pin for
+// #define RFM95_INT 4      // SPI interrupt pin for data "ready" function
+// #define RFM95_FREQ 922.0 // Frequency Set function 915 MHz
+// #define SERVER_ADDRESS 3
+// // SCK, MOSI, MISO (18, 23, 19)
+// #define GRAVITY_ADDRESS 0x23
+// #define NODE_ID 50
+
+// #define ULPSLEEP 4000      // amount in microseconds the ULP co-processor sleeps
+// #define TIMEFACTOR 1000000 // factor between seconds and microseconds
+// #define TIMESLEEP 3600     // amount in seconds the ESP32 sleeps
+// #define PIN_RAIN GPIO_NUM_25
+// #define PIN_RAIN_RTC 6
+
+// typedef struct main
+// {
+//     uint8_t id;
+//     float temperature;
+//     float humidity;
+//     float lux;
+//     uint32_t tips;
+// } Payload;
+
+// typedef struct gpsPayload
+// {
+//     uint8_t id;
+//     double latitude;
+//     double longitude;
+// } GpsPayload;
+
+// // instances
+// DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
+// RH_RF95 rf95(RFM95_CS, RFM95_INT);
+// RHReliableDatagram manager(rf95, NODE_ID);
+
+// int sendCounter = 0;
+
+// void sendPayload();
+// void sendDistress();
+
+// void setup()
+// {
+
+//     Serial.begin(9600);
+//     // setCpuFrequencyMhz(80);
+
+//     // LoRa setup
+//     pinMode(RFM95_RST, OUTPUT);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+//     digitalWrite(RFM95_RST, LOW);
+//     delay(10);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+
+//     if (!rf95.init())
+//     {
+//         Serial.println("RFM95 radio init failed");
+//         while (1)
+//             ;
+//     }
+
+//     Serial.println("RFM95 radio init OK!");
+
+//     if (!rf95.setFrequency(RFM95_FREQ))
+//     {
+//         Serial.println("setFrequency failed");
+//         while (1)
+//             ;
+//     }
+
+//     rf95.setTxPower(23, false);
+//     rf95.setThisAddress(NODE_ID);
+//     rf95.setHeaderFrom(NODE_ID);
+//     rf95.setHeaderTo(SERVER_ADDRESS);
+//     rf95.setModeTx();
+//     rf95.setModemConfig(RH_RF95::Bw125Cr48Sf4096);
+//     rf95.setPayloadCRC(true);
+//     manager.setRetries(0);
+
+//     Serial.println("LoRa Setup complete");
+// }
+
+// void loop()
+// {
+//     if (sendCounter >= 3)
+//     {
+//         Serial.println("Sending distress signal");
+//         sendDistress();
+//         sendCounter = 0;
+//     }
+//     else
+//     {
+//         Serial.println("Sending payload signal");
+//         sendPayload();
+//     }
+
+//     sendCounter++;
+//     delay(5000);
+// }
+
+// void sendDistress()
+// {
+//     GpsPayload gpsPayload;
+//     gpsPayload.id = NODE_ID;
+//     gpsPayload.latitude = 1.0;
+//     gpsPayload.longitude = 3.0;
+
+//     if (manager.sendtoWait((uint8_t *)&gpsPayload, sizeof(gpsPayload), SERVER_ADDRESS))
+//     {
+//         Serial.println("Message sent");
+//     }
+//     else
+//     {
+//         Serial.println("Message failed");
+//     }
+// }
+
+// void sendPayload()
+// {
+//     Payload payload;
+//     payload.id = NODE_ID;
+//     payload.temperature = 1;
+//     payload.humidity = 1;
+//     payload.lux = 1;
+//     payload.tips = 1;
+
+//     if (manager.sendtoWait((uint8_t *)&payload, sizeof(payload), SERVER_ADDRESS))
+//     {
+//         Serial.println("Message sent");
+//     }
+//     else
+//     {
+//         Serial.println("Message failed");
+//     }
+// }
+
+// /*
+//     GPS Experimentation
+// */
+// // dependency gajelas
+// #include <SPI.h>
+// #include <Wire.h>
+
+// #include <TinyGPS++.h>
+
+// #define GPS_RXPIN 16
+// #define GPS_TXPIN 17
+// #define GPS_POWER 14
+
+// TinyGPSPlus gps;
+
+// void setup()
+// {
+//     Serial.begin(9600);
+//     Serial.println("GPS Experimentation");
+
+//     // turn on
+//     // simulate
+
+//     pinMode(GPS_POWER, INPUT_PULLDOWN);
+
+//     delay(5000);
+
+//     Serial.println("Nyala bos");
+//     pinMode(GPS_POWER, OUTPUT);
+//     digitalWrite(GPS_POWER, HIGH);
+
+//     Serial2.begin(9600, SERIAL_8N1, GPS_RXPIN, GPS_TXPIN);
+// }
+
+// void loop()
+// {
+//     while (Serial2.available() > 0)
+//     {
+//         if (gps.encode(Serial2.read()))
+//         {
+//             if (gps.location.isValid())
+//             {
+//                 Serial.print("Latitude= ");
+//                 Serial.print(gps.location.lat(), 6);
+//                 Serial.print(" Longitude= ");
+//                 Serial.println(gps.location.lng(), 6);
+
+//                 Serial.println("---------------");
+
+//                 pinMode(GPS_POWER, OUTPUT);
+//             }
+//         }
+//     }
+// }
+
+// /*
+
+/*                I2C Tester                */
+
+// /*
+//     Check I2C components
+
+// */
+
+// #include <Wire.h>
+// #include <DFRobot_SHT20.h>
+// #include <SPI.h>
+
+// #define GRAVITY_ADDRESS 0x23
+
+// uint8_t buf[4] = {0};
+// uint16_t data;
+
+// DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
+
+// // functions
+// uint8_t readReg(uint8_t reg, const void *pBuf, size_t size)
+// {
+//     if (pBuf == NULL)
+//     {
+//         Serial.println("pBuf ERROR!! : null pointer");
+//     }
+//     uint8_t *_pBuf = (uint8_t *)pBuf;
+//     Wire.beginTransmission(GRAVITY_ADDRESS);
+//     Wire.write(&reg, 1);
+//     if (Wire.endTransmission() != 0)
+//     {
+//         return 0;
+//     }
+//     delay(20);
+//     Wire.requestFrom(GRAVITY_ADDRESS, size);
+//     for (uint16_t i = 0; i < size; i++)
+//     {
+//         _pBuf[i] = Wire.read();
+//     }
+//     return size;
+// }
+
+// float gravity()
+// {
+//     readReg(0x10, buf, 2);
+//     data = buf[0] << 8 | buf[1];
+//     return (((float)data) / 1.2);
+// }
+
+// void setup()
+// {
+//     Serial.begin(9600);
+//     Wire.begin();
+//     sht20.initSHT20();
+// }
+
+// void loop()
+// {
+//     Serial.println("Temperature: ");
+//     Serial.println(sht20.readTemperature());
+//     Serial.println("Humidity: ");
+//     Serial.println(sht20.readHumidity());
+//     Serial.println("Lux: ");
+//     Serial.println(gravity());
+//     delay(5000);
+// }
+
+// /* LORA Receiver for ESP32*/
+// #include "Arduino.h"
+// #include <Wire.h>
+// #include <SPI.h>
+// #include <RH_RF95.h>
+// #include <RHReliableDatagram.h>
+
+// #define RFM95_RST 15     // Reset pin for initial reset of module
+// #define RFM95_CS 5       // SPI channel select or slave select pin for
+// #define RFM95_INT 4      // SPI interrupt pin for data "ready" function
+// #define RFM95_FREQ 922.0 // Frequency Set function 922 MHz
+// // #define SERVER_ADDRESS 2
+// // SCK, MOSI, MISO (18, 23, 19)
+// #define NODE_ID 2
+
+// typedef struct main
+// {
+//     uint8_t id;
+//     float temperature;
+//     float humidity;
+//     float lux;
+//     uint32_t tips;
+// } Payload;
+
+// RH_RF95 rf95(RFM95_CS, RFM95_INT);
+// RHReliableDatagram manager(rf95, NODE_ID);
+
+// void setup()
+// {
+//     Serial.begin(9600);
+//     setCpuFrequencyMhz(80);
+
+//     Serial.println("LORA TEST");
+
+//     // LoRa setup
+//     pinMode(RFM95_RST, OUTPUT);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+//     digitalWrite(RFM95_RST, LOW);
+//     delay(10);
+//     digitalWrite(RFM95_RST, HIGH);
+//     delay(10);
+
+//     if (!rf95.init())
+//     {
+//         Serial.println("RFM95 radio init failed");
+//         while (1)
+//             ;
+//     }
+//     Serial.println("RFM95 radio init OK!");
+
+//     if (!rf95.setFrequency(RFM95_FREQ))
+//     {
+//         Serial.println("setFrequency failed");
+//         while (1)
+//             ;
+//     }
+
+//     rf95.setTxPower(23, false);
+//     rf95.setThisAddress(NODE_ID);
+//     // rf95.setHeaderFrom(NODE_ID);
+//     // rf95.setHeaderTo(SERVER_ADDRESS);
+//     rf95.setModeRx();
+//     rf95.setModemConfig(RH_RF95::Bw125Cr48Sf4096);
+//     rf95.setPayloadCRC(true);
+//     manager.setRetries(0);
+// }
+
+// void loop()
+// {
+
+//     // read lora incoming packets
+//     if (rf95.available())
+//     {
+//         uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+//         uint8_t len = sizeof(buf);
+//         if (rf95.recv(buf, &len))
+//         {
+//             Payload *payload = (Payload *)buf;
+//             Serial.println("Message received");
+//             Serial.println("ID: ");
+//             Serial.println(payload->id);
+//             Serial.println("Temperature: ");
+//             Serial.println(payload->temperature);
+//             Serial.println("Humidity: ");
+//             Serial.println(payload->humidity);
+//             Serial.println("Lux: ");
+//             Serial.println(payload->lux);
+//             Serial.println("Tips: ");
+//             Serial.println(payload->tips);
+//         }
+//     }
+// }
+
+// // TEST GPS Deep Sleep
+// /*
+//     Main Program
+// */
+
+// #include "Arduino.h"
+// #include <Wire.h>
+// #include <SPI.h>
+
+// // sleep thingies
+// #include "esp_sleep.h"
+
+// #include "driver/gpio.h"
+// #include "driver/rtc_io.h"
+
+// // gps module
+// #include <TinyGPS++.h>
+
+// #define GPS_RXPIN 16
+// #define GPS_TXPIN 17
+// #define GPS_POWER GPIO_NUM_14
+
+// #define INTUISI_PIN GPIO_NUM_35
+
+// // instances
+// TinyGPSPlus gps;
+
+// RTC_DATA_ATTR uint32_t bootCount = 0;
+
+// void setup()
+// {
+//     // Serial.begin(115200);
+//     setCpuFrequencyMhz(80);
+
+//     // // add delay if first boot
+//     // if (bootCount == 0)
+//     // {
+//     //     delay(10000);
+//     // }
+
+//     ++bootCount;
+
+//     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+
+//     // debug yang ULP - matiin kalo udah bisa
+//     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0)
+//     {
+//         Serial.println(F("LoRa Setup complete"));
+
+//         // if woke up from ext0 - antimaling trigger
+//         if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0)
+//         {
+
+//             // turn on led
+//             pinMode(LED_BUILTIN, OUTPUT);
+//             digitalWrite(LED_BUILTIN, HIGH);
+
+//             // power up GPS via TIP31C
+//             rtc_gpio_init(GPS_POWER);
+//             rtc_gpio_hold_dis(GPS_POWER);
+//             rtc_gpio_pulldown_dis(GPS_POWER);
+//             rtc_gpio_pullup_dis(GPS_POWER);
+//             rtc_gpio_set_direction(GPS_POWER, RTC_GPIO_MODE_OUTPUT_ONLY);
+//             rtc_gpio_set_level(GPS_POWER, 1);
+
+//             // pinMode(GPS_POWER, OUTPUT);
+//             // digitalWrite(GPS_POWER, HIGH);
+
+//             Serial1.begin(9600, SERIAL_8N1, GPS_RXPIN, GPS_TXPIN);
+
+//             int count = 0;
+
+//             // try to read GPS and send it to gateway 3 times
+
+//             while (count < 3)
+//             {
+//                 if (Serial1.available() <= 0)
+//                 {
+//                     delay(10);
+//                     continue;
+//                 }
+
+//                 if (gps.encode(Serial1.read()) && gps.location.isValid())
+//                 {
+//                     // sleep for 2 seconds for each iteration
+//                     delay(2000);
+//                     count++;
+//                 }
+//             }
+//         }
+//     }
+
+//     // disable GPS by default make it pull down
+//     rtc_gpio_init(GPS_POWER);
+//     rtc_gpio_set_direction(GPS_POWER, RTC_GPIO_MODE_INPUT_ONLY);
+//     rtc_gpio_pullup_dis(GPS_POWER);
+//     rtc_gpio_pulldown_en(GPS_POWER);
+//     rtc_gpio_hold_en(GPS_POWER);
+
+//     // set interrupt for intuisi on ext0
+//     // pinMode(INTUISI_PIN, INPUT_PULLDOWN);
+//     rtc_gpio_init(INTUISI_PIN);
+//     rtc_gpio_pullup_dis(INTUISI_PIN);
+//     rtc_gpio_pulldown_en(INTUISI_PIN);
+//     esp_sleep_enable_ext0_wakeup(INTUISI_PIN, 0);
+
+//     // initSleep(TIMESLEEP);
+
+//     esp_deep_sleep_start();
+// }
+
+// void loop()
+// {
+// }
