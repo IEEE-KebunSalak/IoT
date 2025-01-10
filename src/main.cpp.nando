@@ -12,11 +12,11 @@
 #define RFM95_RST 15     // Reset pin for initial reset of module
 #define RFM95_CS 5       // SPI channel select or slave select pin for
 #define RFM95_INT 4      // SPI interrupt pin for data "ready" function
-#define RFM95_FREQ 915.0 // Frequency Set function 915 MHz
+#define RFM95_FREQ 922.0 // Frequency Set function 915 MHz
 #define SERVER_ADDRESS 2
 // SCK, MOSI, MISO (18, 23, 19)
 #define GRAVITY_ADDRESS 0x23
-#define NODE_ID 50
+#define NODE_ID 102
 
 // #define ULPSLEEP 4000      // amount in microseconds the ULP co-processor sleeps
 #define ULPSLEEP 4000      // amount in microseconds the ULP co-processor sleeps
@@ -56,7 +56,7 @@ void setup()
     digitalWrite(RFM95_RST, HIGH);
     delay(10);
 
-    if (!rf95.init())
+    if (!manager.init())
     {
         Serial.println("RFM95 radio init failed");
         while (1)
@@ -73,11 +73,11 @@ void setup()
     }
 
     rf95.setTxPower(23, false);
-    rf95.setThisAddress(NODE_ID);
-    rf95.setHeaderFrom(NODE_ID);
-    rf95.setHeaderTo(SERVER_ADDRESS);
-    rf95.setModeTx();
-    rf95.setModemConfig(RH_RF95::Bw125Cr45Sf2048);
+    // rf95.setThisAddress(NODE_ID);
+    // rf95.setHeaderFrom(NODE_ID);
+    // rf95.setHeaderTo(SERVER_ADDRESS);
+    // rf95.setModeTx();
+    rf95.setModemConfig(RH_RF95::Bw125Cr48Sf4096);
     rf95.setPayloadCRC(true);
     manager.setRetries(0);
 
@@ -89,6 +89,9 @@ void loop()
     // unused loop cuz of deep sleep
 
     sendPayload();
+
+    Serial.println("[Payload]: SENT");
+
     delay(5000);
 }
 
@@ -96,12 +99,12 @@ void sendPayload()
 {
     Payload payload;
     payload.id = NODE_ID;
-    payload.temperature = 1;
-    payload.humidity = 1;
-    payload.lux = 1;
-    payload.tips = 1;
+    payload.temperature = 20.28375;
+    payload.humidity = 99.29847;
+    payload.lux = 99.182;
+    payload.tips = 100;
 
-    if (manager.sendtoWait((uint8_t *)&payload, sizeof(payload), SERVER_ADDRESS))
+    if (manager.sendto((uint8_t *)&payload, sizeof(payload), SERVER_ADDRESS))
     {
         Serial.println("Message sent");
     }

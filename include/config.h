@@ -1,14 +1,13 @@
-#define NODE_ID 101
-#define SERVER_ADDRESS 100
+#define NODE_ID 42
+#define SERVER_ADDRESS 4
 
 #define ULPSLEEP 4000      // amount in microseconds the ULP co-processor sleeps
 #define TIMEFACTOR 1000000 // factor between seconds and microseconds
-// #define TIMESLEEP 3600     // amount in seconds the ESP32 sleeps
-#define TIMESLEEP 15 // amount in seconds the ESP32 sleeps
+#define TIMESLEEP 3600     // amount in seconds the ESP32 sleeps
 
 #define AP_SSID "NODE-OTA"
 #define AP_PASSWORD "kulonuwun"
-#define OTA_WAIT 60000
+#define OTA_WAIT 20000
 
 // Define static IP configuration
 IPAddress local_IP(1, 1, 1, 1);     // Static IP
