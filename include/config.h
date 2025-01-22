@@ -1,5 +1,5 @@
-#define NODE_ID 42
-#define SERVER_ADDRESS 4
+#define NODE_ID 21
+#define SERVER_ADDRESS 2
 
 #define ULPSLEEP 4000      // amount in microseconds the ULP co-processor sleeps
 #define TIMEFACTOR 1000000 // factor between seconds and microseconds

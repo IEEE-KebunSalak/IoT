@@ -63,6 +63,7 @@ uint8_t buf[4] = {0};
 uint16_t data;
 
 RTC_DATA_ATTR bool firstBoot = true;
+RTC_DATA_ATTR uint8_t gpsRetryCount = 0;
 
 extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
 extern const uint8_t ulp_main_bin_end[] asm("_binary_ulp_main_bin_end");
@@ -183,8 +184,12 @@ void setup()
         }
 
         // if woke up from ext1 - antimaling trigger
-        if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT1)
+        if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT1 && gpsRetryCount < 3)
         {
+            // set LED_BUILTIN as output
+            pinMode(LED_BUILTIN, OUTPUT);
+            digitalWrite(LED_BUILTIN, HIGH);
+
             // power up GPS via TIP31C
             rtc_gpio_deinit(GPS_POWER);
             rtc_gpio_init(GPS_POWER);
@@ -218,6 +223,8 @@ void setup()
                     count++;
                 }
             }
+
+            digitalWrite(LED_BUILTIN, LOW);
         }
 
         rf95.sleep();
@@ -231,10 +238,16 @@ void setup()
     rtc_gpio_set_direction(GPS_POWER, RTC_GPIO_MODE_INPUT_ONLY);
     rtc_gpio_hold_en(GPS_POWER);
 
-    // set interrupt for INTUISI_PIN on ext1
-    esp_sleep_enable_ext1_wakeup(1ULL << INTUISI_PIN, ESP_EXT1_WAKEUP_ALL_LOW);
-    rtc_gpio_pullup_dis(INTUISI_PIN);
-    rtc_gpio_pulldown_en(INTUISI_PIN);
+    if (gpsRetryCount < 3) // kalo udh 3x retry, matiin antimaling
+    {
+        // set interrupt for INTUISI_PIN on ext1
+        esp_sleep_enable_ext1_wakeup(1ULL << INTUISI_PIN, ESP_EXT1_WAKEUP_ALL_LOW);
+        rtc_gpio_pullup_dis(INTUISI_PIN);
+        rtc_gpio_pulldown_en(INTUISI_PIN);
+
+        // increase gpsRetryCount
+        gpsRetryCount++;
+    }
 
     if (firstBoot)
     {

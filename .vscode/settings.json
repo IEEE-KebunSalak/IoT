@@ -2,6 +2,7 @@
   "C_Cpp.errorSquiggles": "disabled",
   "files.associations": {
     "*.nando": "cpp",
-    "*.tcc": "cpp"
+    "*.tcc": "cpp",
+    "fstream": "cpp"
   }
 }

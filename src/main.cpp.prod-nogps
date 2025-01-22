@@ -1,6 +1,6 @@
 
 /*
-    Main Program
+    Main Program - NO GPS
 */
 
 #include "Arduino.h"

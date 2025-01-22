@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySalak IoT Configurator</title>
+</head>
+<body>
+    <h1>MySalak Configuration</h1>
+    
+    <form method="post" action="/saveconfig">
+        <label for="gateway_id">Gateway ID</label>
+        <input type="number" name="gateway_id" placeholder="Gateway ID" required>
+        <br>
+        <label for="node_id">Node ID</label>
+        <input type="number" name="node_id" placeholder="Node ID" required>
+        <br>
+        <label for="gps">Use GPS?</label>
+        <input type="checkbox" name="gps">
+        <br>
+        <label for="halleffect">Use halleffect?</label>
+        <input type="checkbox" name="halleffect">
+        <br>
+        <br>
+
+        <button type="submit">Save</button>
+    </form>
+</body>
+</html>
